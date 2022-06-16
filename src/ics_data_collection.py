@@ -5,7 +5,7 @@ from collections import defaultdict # generates default key if missing
 dataset = defaultdict(list)
 
 # loop through enterprise attack-pattern:
-folder_name = 'CTI Analysis/data/ics-attack-pattern' 
+folder_name = '/homes/lgf21/AutomatedCTI/CTI Analysis/Automated-CTI-Analysis/data/ics-attack-pattern' 
 for filename in os.listdir(folder_name): 
     if filename.endswith('.json'):
         with open(os.path.join(folder_name, filename)) as file:
