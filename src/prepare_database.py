@@ -3,21 +3,24 @@ import json
 import os 
 import pandas as pd 
 
-ent = 'ent_dataset.json'
-ics = 'ics_dataset.json'
+data = 'dataset_full.json'
 
 # reading json: 
-with open(ent) as ent_file:
-    open_ent = json.load(ent_file)
+with open(data) as file:
+    open_data = json.load(file)
 
 # convert json to dataframe:
-ent_df = pd.DataFrame.from_dict(open_ent, orient = 'index')
-ent_df.reset_index(level=0, inplace=True)
+df = pd.DataFrame.from_dict(data, orient='index', columns = ['URL', 'MITRE domain', 'Tactic name', 'Technique name', 'Technique ID' ])
+
+print(df)
+
+#df.reset_index(level=0, inplace=True)
 
 #ent_df.info()
+#print(df.groupby(df[:,3]))
+#ent_df.aggregate(ent_df[0])
 
-ent_df.groupby(ent_df[3])
-ent_df.aggregate(ent_df[0])
+
 
 
 

@@ -1,4 +1,5 @@
 import json
+from wsgiref import headers
 import PyPDF2
 import requests 
 from bs4 import BeautifulSoup
@@ -9,21 +10,43 @@ from collections import defaultdict
 import re
 from bs4 import Comment
 from tika import parser
+import os
+
+# Use from original browser: 
+user_agent_list = [
+    # Chrome
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 5.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36',
+    'Mozilla/4.0 (compatible; MSIE 9.0; Windows NT 6.1)',
+    'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
+    'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)',
+    'Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko',
+    'Mozilla/5.0 (Windows NT 6.2; WOW64; Trident/7.0; rv:11.0) like Gecko',
+    'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko',
+    'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.0; Trident/5.0)',
+    'Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko',
+    'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)',
+    'Mozilla/5.0 (Windows NT 6.1; Win64; x64; Trident/7.0; rv:11.0) like Gecko',
+    'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; WOW64; Trident/6.0)',
+    'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)',
+    'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0; .NET CLR 2.0.50727; .NET CLR 3.0.4506.2152; .NET CLR 3.5.30729)'
+]
 
 def remove_style_code(soup):
-    #styleclean = re.compile('<style>.*?</style>')
-    #js_clean = re.sub(styleclean, '', data)
-    #javascript = re.compile('<script>.*?</script>')
-    #cleandata = re.sub(javascript, '',js_clean )
     [x.extract() for x in soup.find_all('script')]
     [x.extract() for x in soup.find_all('style')]
     [x.extract() for x in soup.find_all('meta')]
     [x.extract() for x in soup.find_all('noscript')]
     [x.extract() for x in soup.find_all(text=lambda text:isinstance(text, Comment))]
-    #return re.sub('\W+',' ', cleandata)
     text = ''.join((c for c in str(soup.text) if ord(c) < 128))
+    text = re.sub('\s*\(\*\)|\s*\d+',' ',text)
     return re.sub('\W+',' ', text)
-    #return re.sub('\W+',' ', soup.text.encode('ascii','ignore'))
 
 if __name__ == '__main__':
     # import json:
@@ -49,10 +72,10 @@ if __name__ == '__main__':
             full_text = ""
 
             # ********************* PDF Processing: *********************
-            if url_list[link].__contains__('.pdf'):
+            if url_list[link].__contains__('.pdf') or url_list[link].__contains__('download'):
                 filename = url_list[link].split('/')[-1]
-                urllib.request.urlretrieve(url_list[link], filename)
                 try:
+                    urllib.request.urlretrieve(url_list[link], filename)
                     pdfReader = PyPDF2.PdfFileReader(filename)
                     print(pdfReader.numPages)
                     page = 0
@@ -72,16 +95,26 @@ if __name__ == '__main__':
                         print(E)
                     pass
                 pass
-
+                try:
+                    os.remove(filename)
+                except BaseException as E:
+                    print(E)
+                pass
             # ********************* Non-PDF Processing: *********************
             else: 
-                response = requests.get(url_list[link])
+                user_agent = random.choice(user_agent_list)
+                header = {"User-Agent": user_agent, "Accept": "*/*", "Content-Type": "application/json"}
+                response = requests.get(url_list[link],timeout = 20, headers = header) # increase timeout to load website
                 soup = BeautifulSoup(response.content, 'html5lib')  # need to clean some of the scripts (ex: css and javascript)
-                #full_text = remove_style_code(soup.text.strip())
-                #full_text = remove_style_code(soup.find("body").text.strip())
-                full_text = remove_style_code(soup)
-            pass         
-            #  .ecnode('ascii','ignore')
+                try:
+                    if not soup.text.lower().__contains__('page not found'): # delete all page not found pages 
+                        full_text = remove_style_code(soup)
+                    else:
+                        print('\t\t\t  website page not found error')
+                except BaseException as E:
+                    print(E)
+                pass
+            pass                     
             pdf_key["text"] = full_text
             pdf_key["keywords"] = url_keywords[link]
             main_Data.append(pdf_key)
