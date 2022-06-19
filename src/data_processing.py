@@ -56,7 +56,8 @@ if __name__ == '__main__':
     url_list = []
     url_keywords = []
     for k, v in data.items():
-        if not k.endswith('.zip'):
+    # for k, v in islice(data.items(), 5):
+        if not k.endswith('.zip') and not k.__contains__('presentation'):
             url_keywords.append(v)
             url_list.append(k)
         pass
