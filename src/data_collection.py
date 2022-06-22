@@ -1,3 +1,10 @@
+#******************************************************************************
+        # This code is used to scrape the individual jsons stored in the
+        # data folder  'enterprise-attack' and 'ics-attack'. It reads the 
+        # relevant information before storing them in the "dataset full" file
+#****************************************************************************** 
+
+
 from ast import keyword
 import os
 import json

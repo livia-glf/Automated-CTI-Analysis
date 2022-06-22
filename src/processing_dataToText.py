@@ -1,3 +1,10 @@
+#******************************************************************************
+        # This code is used to scrape the 'dataset full' json file to retrieve
+        # every url and extract the text from it - whether HTML or PDF
+        # It then stores it in a file named 'training data'
+#****************************************************************************** 
+
+
 import json
 from wsgiref import headers
 import PyPDF2
@@ -29,7 +36,7 @@ def remove_style_code(soup):
     
     return soup.text # re.sub('\W+',' ', text)
 
-output_file_name = 'draft2_training_data.json'
+output_file_name = 'dataset_full_text.json'
 
 if os.path.exists(output_file_name):
     with open(output_file_name) as f: 
@@ -62,15 +69,12 @@ if __name__ == '__main__':
             
                 try:
                     pdfReader = PyPDF2.PdfFileReader('tmp.pdf')
-                    #print(pdfReader.numPages)
                     page = 0
                     while page < pdfReader.numPages: # read all the pages
                         pageObj = pdfReader.getPage(page)
                         pdf_text.append(pageObj.extractText()) # store each page in list
                         page += 1
                     
-                    #pdfReader.close()
-
                     full_text = ",".join(pdf_text) # separate each page with , and join in full text 
                     pdf = True
                 except:
@@ -87,7 +91,7 @@ if __name__ == '__main__':
             url_data["text"] = full_text
             new_data[url] = url_data
             
-            with open('draft2_training_data.json','w', encoding='utf-8') as outfile:
+            with open('dataset_full_text.json','w', encoding='utf-8') as outfile:
                 json.dump(new_data, outfile, indent=4)
 
             
